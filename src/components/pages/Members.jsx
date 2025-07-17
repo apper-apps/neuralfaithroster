@@ -14,12 +14,22 @@ import SearchBar from "@/components/molecules/SearchBar";
 import Card from "@/components/atoms/Card";
 import Select from "@/components/atoms/Select";
 import Button from "@/components/atoms/Button";
+
 const Members = () => {
   const navigate = useNavigate();
-  const { members, loading, error, loadMembers, deleteMember, searchMembers } = useMembers();
+  const {
+    members,
+    setMembers,
+    loading,
+    error,
+    loadMembers,
+    searchMembers,
+    deleteMember
+  } = useMembers();
+  
+  const [selectedMember, setSelectedMember] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedMember, setSelectedMember] = useState(null);
   const [viewMode, setViewMode] = useState("table");
 
 const handleSearch = async (e) => {
