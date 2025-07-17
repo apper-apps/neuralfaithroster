@@ -64,7 +64,7 @@ export const memberService = {
     return { success: true };
   },
 
-  // Search members
+// Search members (including family-aware search)
   async search(query) {
     await delay(250);
     if (!query.trim()) {
@@ -72,13 +72,65 @@ export const memberService = {
     }
     
     const searchTerm = query.toLowerCase();
-    return members.filter(member => 
+    const matchingMembers = members.filter(member => 
       member.firstName.toLowerCase().includes(searchTerm) ||
       member.lastName.toLowerCase().includes(searchTerm) ||
       member.email.toLowerCase().includes(searchTerm) ||
       member.phone.includes(searchTerm) ||
       member.status.toLowerCase().includes(searchTerm)
     );
+
+    // If searching by family name, include all family members
+    const familyIds = new Set();
+    matchingMembers.forEach(member => {
+      if (member.familyId) {
+        familyIds.add(member.familyId);
+      }
+    });
+
+    const familyMembers = members.filter(member => 
+      member.familyId && familyIds.has(member.familyId)
+    );
+
+    // Combine and deduplicate results
+    const allResults = [...matchingMembers, ...familyMembers];
+    const uniqueResults = allResults.filter((member, index, self) =>
+      index === self.findIndex(m => m.Id === member.Id)
+    );
+
+    return uniqueResults;
+  },
+
+  // Get family members for a specific member
+  async getFamilyMembers(memberId) {
+    await delay(200);
+    const member = members.find(m => m.Id === parseInt(memberId));
+    if (!member || !member.familyId) {
+      return [member].filter(Boolean);
+    }
+    
+    return members.filter(m => m.familyId === member.familyId);
+  },
+
+  // Get family options for dropdowns
+  async getFamilyOptions() {
+    await delay(200);
+    const families = {};
+    members.forEach(member => {
+      if (member.familyId) {
+        const familyKey = `${member.familyId}_${member.lastName}`;
+        if (!families[familyKey]) {
+          families[familyKey] = {
+            id: member.familyId,
+            name: `${member.lastName} Family`,
+            memberCount: 0
+          };
+        }
+        families[familyKey].memberCount++;
+      }
+    });
+    
+    return Object.values(families);
   },
 
   // Get members by status

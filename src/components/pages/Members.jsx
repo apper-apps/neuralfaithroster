@@ -3,18 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import { useMembers } from "@/hooks/useMembers";
-import MemberTable from "@/components/organisms/MemberTable";
-import MemberDetail from "@/components/organisms/MemberDetail";
 import MemberCard from "@/components/organisms/MemberCard";
-import SearchBar from "@/components/molecules/SearchBar";
-import Button from "@/components/atoms/Button";
-import Select from "@/components/atoms/Select";
-import Card from "@/components/atoms/Card";
-import Loading from "@/components/ui/Loading";
-import Error from "@/components/ui/Error";
-import Empty from "@/components/ui/Empty";
 import ApperIcon from "@/components/ApperIcon";
-
+import Empty from "@/components/ui/Empty";
+import Error from "@/components/ui/Error";
+import Loading from "@/components/ui/Loading";
+import MemberDetail from "@/components/organisms/MemberDetail";
+import MemberTable from "@/components/organisms/MemberTable";
+import SearchBar from "@/components/molecules/SearchBar";
+import Card from "@/components/atoms/Card";
+import Select from "@/components/atoms/Select";
+import Button from "@/components/atoms/Button";
 const Members = () => {
   const navigate = useNavigate();
   const { members, loading, error, loadMembers, deleteMember, searchMembers } = useMembers();
@@ -23,12 +22,29 @@ const Members = () => {
   const [selectedMember, setSelectedMember] = useState(null);
   const [viewMode, setViewMode] = useState("table");
 
-  const handleSearch = (e) => {
+const handleSearch = async (e) => {
     const value = e.target.value;
     setSearchTerm(value);
     
     if (value.trim()) {
-      searchMembers(value);
+      try {
+        const searchResults = await searchMembers(value);
+        // Group family members together in search results
+        const familyGroups = {};
+        searchResults.forEach(member => {
+          const familyKey = member.familyId || `individual_${member.Id}`;
+          if (!familyGroups[familyKey]) {
+            familyGroups[familyKey] = [];
+          }
+          familyGroups[familyKey].push(member);
+        });
+        
+        // Flatten grouped results while maintaining family proximity
+        const groupedResults = Object.values(familyGroups).flat();
+        setMembers(groupedResults);
+      } catch (error) {
+        console.error("Search failed:", error);
+      }
     } else {
       loadMembers();
     }
@@ -128,10 +144,10 @@ const Members = () => {
       <Card className="p-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex-1 max-w-md">
-            <SearchBar
+<SearchBar
               value={searchTerm}
               onChange={handleSearch}
-              placeholder="Search members..."
+              placeholder="Search members and families..."
             />
           </div>
           
